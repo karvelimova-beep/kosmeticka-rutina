@@ -1,0 +1,36 @@
+name: Týdenní checklist kosmetické rutiny
+
+on:
+  schedule:
+    - cron: "0 5 * * 1"
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  novy-tyden:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Zavřít minulý týden
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue list --label "rutina" --state open --json number --jq '.[].number' |
+            xargs -r -n1 gh issue close --comment "Týden uzavřen ✨"
+
+      - name: Založit nový týden
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh label create rutina --color F9A8D4 --force
+          TYDEN=$(date +%V)
+          OD=$(date +%-d.%-m.)
+          DO=$(date -d "+6 days" +%-d.%-m.%Y)
+          gh issue create \
+            --title "Kosmetická rutina – týden $TYDEN ($OD–$DO)" \
+            --label rutina \
+            --body-file checklist.md
